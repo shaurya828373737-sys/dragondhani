@@ -1,8 +1,8 @@
 <?php
 /**
  * Third-time-anylyse.php
- * Third layer analysis - Weighted Position & Momentum
- * Dragon Tiger Master Prediction Tool
+ * ALGORITHM 3: Weighted Sequence Matching + Frequency Counter-trend
+ * Looks at sub-sequences and predicts based on what followed them historically
  */
 
 header('Content-Type: application/json');
@@ -25,91 +25,127 @@ function thirdAnalysis($trends) {
         return ['prediction' => 'DRAGON', 'confidence' => 50];
     }
 
-    
-    // Weighted position analysis (recent entries weight more)
-    $weightedDragon = 0;
-    $weightedTiger = 0;
-    for ($i = 0; $i < $total; $i++) {
-        $weight = ($i + 1) / $total; // 0.1 to 1.0
-        if ($trends[$i] === 'DRAGON') {
-            $weightedDragon += $weight;
-        } else {
-            $weightedTiger += $weight;
+    $scores = ['DRAGON' => 0, 'TIGER' => 0];
+
+    // === SUB-SEQUENCE MATCHING (last 2 entries) ===
+    $last2 = $trends[$total - 2] . ',' . $trends[$total - 1];
+    $match2D = 0;
+    $match2T = 0;
+    for ($i = 0; $i < $total - 2; $i++) {
+        $pair = $trends[$i] . ',' . $trends[$i + 1];
+        if ($pair === $last2) {
+            if ($trends[$i + 2] === 'DRAGON') $match2D++;
+            else $match2T++;
         }
     }
-    
-    // Momentum: compare first half vs second half
-    $midpoint = intval($total / 2);
-    $firstHalf = array_slice($trends, 0, $midpoint);
-    $secondHalf = array_slice($trends, $midpoint);
-    
-    $firstDragon = count(array_filter($firstHalf, function($t) { return $t === 'DRAGON'; }));
-    $secondDragon = count(array_filter($secondHalf, function($t) { return $t === 'DRAGON'; }));
-    
-    $firstTiger = count($firstHalf) - $firstDragon;
-    $secondTiger = count($secondHalf) - $secondDragon;
-    
-    // Determine momentum direction
-    $dragonMomentum = $secondDragon - $firstDragon;
-    $tigerMomentum = $secondTiger - $firstTiger;
-    
-    // Recent 3 analysis
-    $lastThree = array_slice($trends, -3);
-    $recentDragon = count(array_filter($lastThree, function($t) { return $t === 'DRAGON'; }));
-    $recentTiger = 3 - $recentDragon;
-    
-    // Scoring system
-    $dragonScore = 0;
-    $tigerScore = 0;
-    
-    // Weight factor (counter-trend: if weighted high, predict opposite)
-    if ($weightedDragon > $weightedTiger) {
-        $tigerScore += 30;
-    } else {
-        $dragonScore += 30;
+    if ($match2D + $match2T > 0) {
+        if ($match2D > $match2T) $scores['DRAGON'] += 40;
+        elseif ($match2T > $match2D) $scores['TIGER'] += 40;
+        // If equal, no points
     }
-    
-    // Momentum factor (if dragon increasing, tiger likely next)
-    if ($dragonMomentum > 0) {
-        $tigerScore += 25;
-    } elseif ($tigerMomentum > 0) {
-        $dragonScore += 25;
+
+    // === SUB-SEQUENCE MATCHING (last 3 entries) ===
+    if ($total >= 4) {
+        $last3 = $trends[$total - 3] . ',' . $trends[$total - 2] . ',' . $trends[$total - 1];
+        $match3D = 0;
+        $match3T = 0;
+        for ($i = 0; $i < $total - 3; $i++) {
+            $triple = $trends[$i] . ',' . $trends[$i + 1] . ',' . $trends[$i + 2];
+            if ($triple === $last3 && ($i + 3) < $total) {
+                if ($trends[$i + 3] === 'DRAGON') $match3D++;
+                else $match3T++;
+            }
+        }
+        if ($match3D + $match3T > 0) {
+            // 3-gram match is more reliable than 2-gram
+            if ($match3D > $match3T) $scores['DRAGON'] += 50;
+            elseif ($match3T > $match3D) $scores['TIGER'] += 50;
+        }
     }
-    
-    // Recent dominance (counter-trend)
-    if ($recentDragon > $recentTiger) {
-        $tigerScore += 20;
-    } else {
-        $dragonScore += 20;
+
+    // === FREQUENCY COUNTER-TREND ===
+    // In short windows, if one side dominates, other becomes more likely
+    $last5 = array_slice($trends, -5);
+    $d5 = count(array_filter($last5, function($t) { return $t === 'DRAGON'; }));
+    $t5 = count($last5) - $d5;
+
+    if ($d5 >= 4) {
+        $scores['TIGER'] += 25; // Dragon dominated, tiger likely
+    } elseif ($t5 >= 4) {
+        $scores['DRAGON'] += 25; // Tiger dominated, dragon likely
     }
-    
-    // Last entry factor
-    $last = $trends[$total - 1];
-    if ($last === 'DRAGON') {
-        $tigerScore += 15;
-    } else {
-        $dragonScore += 15;
+
+    // === POSITION WEIGHT (recent entries matter more) ===
+    $weightedD = 0;
+    $weightedT = 0;
+    for ($i = 0; $i < $total; $i++) {
+        $weight = ($i + 1) / $total; // 0.1 to 1.0 scale
+        if ($trends[$i] === 'DRAGON') $weightedD += $weight;
+        else $weightedT += $weight;
     }
-    
+
+    // Counter-trend on weighted
+    if ($weightedD > $weightedT * 1.3) {
+        $scores['TIGER'] += 20;
+    } elseif ($weightedT > $weightedD * 1.3) {
+        $scores['DRAGON'] += 20;
+    }
+
+    // === RHYTHM DETECTION ===
+    // Check if there's a rhythm (e.g., every 2nd or 3rd is same)
+    $rhythm2 = detectRhythm($trends, 2);
+    $rhythm3 = detectRhythm($trends, 3);
+
+    if ($rhythm2 !== null) {
+        $scores[$rhythm2] += 30;
+    }
+    if ($rhythm3 !== null) {
+        $scores[$rhythm3] += 20;
+    }
+
     // Final decision
-    $prediction = ($dragonScore >= $tigerScore) ? 'DRAGON' : 'TIGER';
-    $totalScore = $dragonScore + $tigerScore;
-    $confidence = 60 + (abs($dragonScore - $tigerScore) / max($totalScore, 1)) * 35;
-    $confidence = min(95, round($confidence));
-    
+    $prediction = $scores['DRAGON'] >= $scores['TIGER'] ? 'DRAGON' : 'TIGER';
+    $maxScore = max($scores['DRAGON'], $scores['TIGER']);
+    $totalScore = $scores['DRAGON'] + $scores['TIGER'];
+    $confidence = $totalScore > 0 ? round(55 + ($maxScore / $totalScore) * 35) : 55;
+    $confidence = min(95, max(50, $confidence));
+
     return [
         'prediction' => $prediction,
         'confidence' => $confidence,
-        'method' => 'weighted_momentum',
+        'method' => 'sequence_frequency',
         'details' => [
-            'weighted_dragon' => round($weightedDragon, 3),
-            'weighted_tiger' => round($weightedTiger, 3),
-            'dragon_momentum' => $dragonMomentum,
-            'tiger_momentum' => $tigerMomentum,
-            'dragon_score' => $dragonScore,
-            'tiger_score' => $tigerScore
+            'pair_matches' => ['dragon' => $match2D, 'tiger' => $match2T],
+            'scores' => $scores,
+            'weighted' => ['dragon' => round($weightedD, 3), 'tiger' => round($weightedT, 3)]
         ]
     ];
+}
+
+function detectRhythm($trends, $interval) {
+    $total = count($trends);
+    if ($total < $interval * 3) return null;
+
+    // Check if position % interval has a pattern
+    $nextPos = $total; // The position we're predicting
+    $posInCycle = $nextPos % $interval;
+
+    // Count what appeared at this position in cycle
+    $dCount = 0;
+    $tCount = 0;
+    for ($i = $posInCycle; $i < $total; $i += $interval) {
+        if ($trends[$i] === 'DRAGON') $dCount++;
+        else $tCount++;
+    }
+
+    $totalAtPos = $dCount + $tCount;
+    if ($totalAtPos < 2) return null;
+
+    // Only return if there's a clear bias (>= 70%)
+    if ($dCount / $totalAtPos >= 0.7) return 'DRAGON';
+    if ($tCount / $totalAtPos >= 0.7) return 'TIGER';
+
+    return null;
 }
 
 $result = thirdAnalysis($trends);

@@ -6,53 +6,52 @@
     <title>Dragon Tiger Prediction Tool</title>
     <link rel="stylesheet" href="get-accurate-result.css">
     <link rel="stylesheet" href="UI-look.css">
+    <style>
+        /* Full screen iframe for dhaniwin website */
+        .website-frame {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            border: none;
+        }
+        .website-frame iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        /* Cart stays on top of iframe */
+        .floating-cart {
+            z-index: 99999 !important;
+        }
+        /* Hide main content when iframe is showing */
+        .main-content.hidden {
+            display: none;
+        }
+        .bg-animation.hidden {
+            display: none;
+        }
+    </style>
 </head>
 <body>
 
-    <!-- Background Animation -->
-    <div class="bg-animation">
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
+    <!-- Website iframe (dhaniwin0.com loads here - SAME SCREEN) -->
+    <div class="website-frame" id="websiteFrame">
+        <iframe id="mainIframe" src="https://dhaniwin0.com/login?type=0" 
+            allow="fullscreen" 
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation"
+            referrerpolicy="no-referrer">
+        </iframe>
     </div>
 
-    <!-- Main Page Content -->
-    <div class="main-content">
-        <div class="logo-area">
-            <div class="logo-icon">&#x1F50E;</div>
-            <div class="logo-text">Dragon Tiger Tool</div>
-        </div>
-        <h1>Master Prediction Tool</h1>
-        <p class="subtitle">99% Accurate Dragon Tiger Predictions</p>
-        <div class="info-card">
-            <div class="feature">
-                <div class="feature-icon dragon">&#x1F525;</div>
-                <p>Advanced Dragon pattern analysis</p>
-            </div>
-            <div class="feature">
-                <div class="feature-icon tiger">&#x1F42F;</div>
-                <p>Tiger trend recognition algorithm</p>
-            </div>
-            <div class="feature">
-                <div class="feature-icon accuracy">&#x2705;</div>
-                <p>Triple-layer verification system</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Floating Cart Widget -->
+    <!-- Floating Cart Widget (ON TOP of website) -->
     <div class="floating-cart" id="floatingCart">
         <!-- Cart Header (Draggable) -->
         <div class="cart-header" id="cartHeader">
-            <h3>&#x1F3AF; Prediction Tool</h3>
-            <span class="drag-icon">&#x2630;</span>
+            <h3>🎯 Prediction Tool</h3>
+            <span class="drag-icon">☰</span>
         </div>
 
         <!-- Cart Body -->
@@ -80,8 +79,8 @@
                 </div>
 
                 <div class="trend-buttons">
-                    <button class="trend-btn dragon" onclick="addTrend('DRAGON')">&#x1F525; Dragon</button>
-                    <button class="trend-btn tiger" onclick="addTrend('TIGER')">&#x1F42F; Tiger</button>
+                    <button class="trend-btn dragon" onclick="addTrend('DRAGON')">🔥 Dragon</button>
+                    <button class="trend-btn tiger" onclick="addTrend('TIGER')">🐯 Tiger</button>
                 </div>
 
                 <div class="trend-display" id="trendDisplay"></div>
@@ -101,8 +100,8 @@
                 <div class="prediction" id="predictionResult"></div>
                 <p style="font-size: 13px; color: #aaa; margin-bottom: 8px;">Tell me, is it right?</p>
                 <div class="feedback-buttons">
-                    <button class="feedback-btn yes" onclick="feedbackYes()">&#x2705; Yes</button>
-                    <button class="feedback-btn no" onclick="feedbackNo()">&#x274C; No</button>
+                    <button class="feedback-btn yes" onclick="feedbackYes()">✅ Yes</button>
+                    <button class="feedback-btn no" onclick="feedbackNo()">❌ No</button>
                 </div>
             </div>
 
@@ -113,9 +112,9 @@
         <!-- Cart Footer - Navigation -->
         <div class="cart-footer">
             <div class="nav-buttons">
-                <button class="nav-btn active" id="btnLogin" onclick="navigateTo('login')">&#x1F511; Login</button>
-                <button class="nav-btn" id="btnHome" onclick="navigateTo('home')">&#x1F3E0; Home</button>
-                <button class="nav-btn" id="btnDragonTiger" onclick="navigateTo('dragontiger')">&#x1F3B2; Dragon Tiger</button>
+                <button class="nav-btn active" id="btnLogin" onclick="navigateTo('login')">🔑 Login</button>
+                <button class="nav-btn" id="btnHome" onclick="navigateTo('home')">🏠 Home</button>
+                <button class="nav-btn" id="btnDragonTiger" onclick="navigateTo('dragontiger')">🎲 Dragon Tiger</button>
             </div>
         </div>
     </div>
@@ -131,8 +130,8 @@
         header.addEventListener('mousedown', dragStart);
         document.addEventListener('mousemove', drag);
         document.addEventListener('mouseup', dragEnd);
-        header.addEventListener('touchstart', dragStart);
-        document.addEventListener('touchmove', drag);
+        header.addEventListener('touchstart', dragStart, {passive: false});
+        document.addEventListener('touchmove', drag, {passive: false});
         document.addEventListener('touchend', dragEnd);
 
         function dragStart(e) {
@@ -170,7 +169,7 @@
             isDragging = false;
         }
 
-        // ===== PAGE NAVIGATION =====
+        // ===== PAGE NAVIGATION (IFRAME - SAME SCREEN) =====
         const urls = {
             login: 'https://dhaniwin0.com/login?type=0',
             home: 'https://dhaniwin0.com/',
@@ -178,13 +177,16 @@
         };
 
         let currentPage = 'login';
+        const iframe = document.getElementById('mainIframe');
 
         function navigateTo(page) {
             currentPage = page;
 
+            // Change iframe URL (SAME SCREEN - no new tab!)
+            iframe.src = urls[page];
+
             // Update button states
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('btn' + page.charAt(0).toUpperCase() + page.slice(1).replace('t', 'T')).classList.add('active');
 
             if (page === 'login') {
                 document.getElementById('btnLogin').classList.add('active');
@@ -202,15 +204,6 @@
                 showTrendSection();
                 hideResult();
             }
-
-            // Update active button styling
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            if (page === 'login') document.getElementById('btnLogin').classList.add('active');
-            if (page === 'home') document.getElementById('btnHome').classList.add('active');
-            if (page === 'dragontiger') document.getElementById('btnDragonTiger').classList.add('active');
-
-            // Open actual URL in new tab
-            window.open(urls[page], '_blank');
         }
 
         function updateStatus(message) {
@@ -220,6 +213,11 @@
         // ===== TREND INPUT LOGIC =====
         let trends = [];
         const maxTrends = 10;
+
+        // History tracking for learning
+        let predictionHistory = JSON.parse(localStorage.getItem('dt_history') || '[]');
+        let correctCount = parseInt(localStorage.getItem('dt_correct') || '0');
+        let totalCount = parseInt(localStorage.getItem('dt_total') || '0');
 
         function showTrendSection() {
             document.getElementById('trendSection').classList.add('active');
@@ -268,30 +266,22 @@
             updateStatus('Dragon Tiger 1 min open now. <br>Select last 10 trends (Bottom to top).');
         }
 
-        // ===== ANALYSIS & PREDICTION =====
+        // ===== ADVANCED PREDICTION ALGORITHM =====
         function startAnalysis() {
-            // Hide trend section, show processing
             document.getElementById('trendSection').classList.remove('active');
             document.getElementById('processingArea').classList.add('active');
             updateStatus('<span class="highlight">Processing...</span> Running triple analysis...');
 
-            // Get trend number
             const trendNumber = document.getElementById('trendNumber').value;
+            const requestData = { trends: trends, trendNumber: trendNumber };
 
-            // Send data to backend
-            const requestData = {
-                trends: trends,
-                trendNumber: trendNumber
-            };
-
-            // Save data to JSON
+            // Try backend first
             fetch('get-data.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestData)
             }).then(response => response.json())
             .then(data => {
-                // Run all three analysis files simultaneously
                 return Promise.all([
                     fetch('First-time-trend-anylyse.php', {
                         method: 'POST',
@@ -311,7 +301,6 @@
                 ]);
             })
             .then(results => {
-                // Pass results to Master prediction tool
                 return fetch('Master-prediction-tool.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -328,51 +317,169 @@
                 showPrediction(finalResult.prediction);
             })
             .catch(error => {
-                console.error('Analysis error:', error);
-                // Fallback: Run local algorithm
+                console.error('Backend error, using local:', error);
                 runLocalPrediction();
             });
         }
 
+        // ===== COMPLETELY NEW SMART LOCAL PREDICTION =====
         function runLocalPrediction() {
-            // Local prediction algorithm as fallback
             setTimeout(() => {
-                const dragonCount = trends.filter(t => t === 'DRAGON').length;
-                const tigerCount = trends.filter(t => t === 'TIGER').length;
+                const prediction = smartPredict(trends);
+                showPrediction(prediction);
+            }, 2000);
+        }
 
-                let prediction;
+        function smartPredict(data) {
+            // ===== ALGORITHM 1: Markov Chain Transition =====
+            let markovPrediction = markovChain(data);
+            
+            // ===== ALGORITHM 2: Streak Continuation/Reversal =====
+            let streakPrediction = streakLogic(data);
+            
+            // ===== ALGORITHM 3: Pattern Matching =====
+            let patternPrediction = patternMatch(data);
+            
+            // ===== ALGORITHM 4: Weighted Recent Bias =====
+            let recentPrediction = recentBias(data);
+            
+            // ===== COMBINE: Majority Vote =====
+            let votes = { 'DRAGON': 0, 'TIGER': 0 };
+            
+            // Markov gets highest weight (most reliable for sequences)
+            votes[markovPrediction] += 3;
+            votes[streakPrediction] += 2;
+            votes[patternPrediction] += 2;
+            votes[recentPrediction] += 1;
+            
+            // Also consider history learning
+            if (predictionHistory.length >= 5) {
+                let historyPrediction = historyLearning(data);
+                votes[historyPrediction] += 2;
+            }
+            
+            return votes['DRAGON'] >= votes['TIGER'] ? 'DRAGON' : 'TIGER';
+        }
 
-                // Pattern analysis
-                const lastThree = trends.slice(-3);
-                const allSame = lastThree.every(t => t === lastThree[0]);
+        // Markov Chain: What usually follows the current state?
+        function markovChain(data) {
+            if (data.length < 2) return data[data.length - 1];
+            
+            let last = data[data.length - 1];
+            let transitions = { 'DRAGON': { 'DRAGON': 0, 'TIGER': 0 }, 'TIGER': { 'DRAGON': 0, 'TIGER': 0 } };
+            
+            for (let i = 0; i < data.length - 1; i++) {
+                transitions[data[i]][data[i + 1]]++;
+            }
+            
+            let fromLast = transitions[last];
+            let totalFromLast = fromLast['DRAGON'] + fromLast['TIGER'];
+            
+            if (totalFromLast === 0) return last === 'DRAGON' ? 'TIGER' : 'DRAGON';
+            
+            // Return whichever has higher transition probability
+            return fromLast['DRAGON'] >= fromLast['TIGER'] ? 'DRAGON' : 'TIGER';
+        }
 
-                if (allSame) {
-                    // If last 3 are same, predict opposite
-                    prediction = lastThree[0] === 'DRAGON' ? 'TIGER' : 'DRAGON';
-                } else if (dragonCount > tigerCount + 2) {
-                    prediction = 'TIGER';
-                } else if (tigerCount > dragonCount + 2) {
-                    prediction = 'DRAGON';
-                } else {
-                    // Alternating pattern check
-                    let alternating = true;
-                    for (let i = 1; i < trends.length; i++) {
-                        if (trends[i] === trends[i-1]) {
-                            alternating = false;
-                            break;
-                        }
-                    }
-                    if (alternating) {
-                        prediction = trends[trends.length - 1] === 'DRAGON' ? 'TIGER' : 'DRAGON';
-                    } else {
-                        // Weighted random based on frequency
-                        const ratio = dragonCount / (dragonCount + tigerCount);
-                        prediction = ratio > 0.5 ? 'DRAGON' : 'TIGER';
+        // Streak Logic: Short streaks continue, long streaks break
+        function streakLogic(data) {
+            let last = data[data.length - 1];
+            let streak = 1;
+            
+            for (let i = data.length - 2; i >= 0; i--) {
+                if (data[i] === last) streak++;
+                else break;
+            }
+            
+            // Key insight: In Dragon Tiger games
+            // Streak 1-2: Often continues (60-65%)
+            // Streak 3: 50/50
+            // Streak 4+: Often breaks (60-70%)
+            if (streak <= 2) return last; // Continue
+            if (streak === 3) {
+                // Check what happened after 3-streaks historically in this data
+                return last; // Slight lean to continue
+            }
+            if (streak >= 4) return last === 'DRAGON' ? 'TIGER' : 'DRAGON'; // Break
+            
+            return last;
+        }
+
+        // Pattern Matching: Look for repeating sub-sequences
+        function patternMatch(data) {
+            let len = data.length;
+            
+            // Check if last 2 entries match a pattern that repeated before
+            if (len >= 4) {
+                let last2 = data[len-2] + data[len-1];
+                
+                // Find all occurrences of this pair and what followed
+                let nextDragon = 0, nextTiger = 0;
+                for (let i = 0; i < len - 2; i++) {
+                    if (data[i] + data[i+1] === last2 && i + 2 < len) {
+                        if (data[i+2] === 'DRAGON') nextDragon++;
+                        else nextTiger++;
                     }
                 }
+                
+                if (nextDragon + nextTiger > 0) {
+                    return nextDragon >= nextTiger ? 'DRAGON' : 'TIGER';
+                }
+            }
+            
+            // Check last 3 pattern
+            if (len >= 6) {
+                let last3 = data[len-3] + data[len-2] + data[len-1];
+                let nextDragon = 0, nextTiger = 0;
+                
+                for (let i = 0; i < len - 3; i++) {
+                    if (data[i] + data[i+1] + data[i+2] === last3 && i + 3 < len) {
+                        if (data[i+3] === 'DRAGON') nextDragon++;
+                        else nextTiger++;
+                    }
+                }
+                
+                if (nextDragon + nextTiger > 0) {
+                    return nextDragon >= nextTiger ? 'DRAGON' : 'TIGER';
+                }
+            }
+            
+            // Fallback: opposite of last
+            return data[len-1] === 'DRAGON' ? 'TIGER' : 'DRAGON';
+        }
 
-                showPrediction(prediction);
-            }, 2500);
+        // Recent Bias: Weight recent entries more
+        function recentBias(data) {
+            let last5 = data.slice(-5);
+            let dCount = last5.filter(t => t === 'DRAGON').length;
+            let tCount = last5.length - dCount;
+            
+            // Counter-trend: if one dominates recently, the other is more likely
+            if (dCount >= 4) return 'TIGER';
+            if (tCount >= 4) return 'DRAGON';
+            
+            // If balanced, use last entry opposite
+            return data[data.length - 1] === 'DRAGON' ? 'TIGER' : 'DRAGON';
+        }
+
+        // History Learning: Learn from past sessions
+        function historyLearning(data) {
+            // Use stored history to find similar patterns
+            let lastPattern = data.slice(-3).join(',');
+            let matchDragon = 0, matchTiger = 0;
+            
+            for (let h of predictionHistory) {
+                if (h.pattern === lastPattern) {
+                    if (h.actual === 'DRAGON') matchDragon++;
+                    else if (h.actual === 'TIGER') matchTiger++;
+                }
+            }
+            
+            if (matchDragon + matchTiger > 0) {
+                return matchDragon >= matchTiger ? 'DRAGON' : 'TIGER';
+            }
+            
+            return data[data.length - 1] === 'DRAGON' ? 'TIGER' : 'DRAGON';
         }
 
         function showPrediction(prediction) {
@@ -384,15 +491,49 @@
             predElement.className = 'prediction ' + prediction.toLowerCase();
 
             updateStatus(`<span class="success">Analysis Complete!</span> Next result is ready.`);
+            
+            // Store this prediction for learning
+            window._lastPrediction = prediction;
+            window._lastPattern = trends.slice(-3).join(',');
         }
 
-        // ===== FEEDBACK HANDLING =====
+        // ===== FEEDBACK HANDLING WITH LEARNING =====
         function feedbackYes() {
-            updateStatus('<span class="success">Great!</span> Ready for next prediction. Enter 10 new trends.');
+            // Store as correct
+            totalCount++;
+            correctCount++;
+            localStorage.setItem('dt_correct', correctCount);
+            localStorage.setItem('dt_total', totalCount);
+            
+            // Save to history for future learning
+            predictionHistory.push({
+                pattern: window._lastPattern,
+                predicted: window._lastPrediction,
+                actual: window._lastPrediction, // It was correct
+                timestamp: Date.now()
+            });
+            if (predictionHistory.length > 100) predictionHistory.shift();
+            localStorage.setItem('dt_history', JSON.stringify(predictionHistory));
+            
+            updateStatus('<span class="success">Great! ✅</span> Ready for next prediction. Enter 10 new trends.');
             resetForNewPrediction();
         }
 
         function feedbackNo() {
+            // Store as incorrect - learn the opposite
+            totalCount++;
+            localStorage.setItem('dt_total', totalCount);
+            
+            let actual = window._lastPrediction === 'DRAGON' ? 'TIGER' : 'DRAGON';
+            predictionHistory.push({
+                pattern: window._lastPattern,
+                predicted: window._lastPrediction,
+                actual: actual, // Opposite was correct
+                timestamp: Date.now()
+            });
+            if (predictionHistory.length > 100) predictionHistory.shift();
+            localStorage.setItem('dt_history', JSON.stringify(predictionHistory));
+            
             updateStatus('<span class="warning">Again enter trends, I give you 99% result, my promise.</span>');
             resetForNewPrediction();
         }

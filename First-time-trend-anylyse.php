@@ -1,8 +1,8 @@
 <?php
 /**
  * First-time-trend-anylyse.php
- * First layer analysis - Frequency & Streak Detection
- * Dragon Tiger Master Prediction Tool
+ * ALGORITHM 1: Markov Chain Transition Matrix
+ * Calculates transition probabilities from the data
  */
 
 header('Content-Type: application/json');
@@ -21,67 +21,99 @@ $trendNumber = isset($input['trendNumber']) ? $input['trendNumber'] : 1;
 
 function firstAnalysis($trends) {
     $total = count($trends);
-    if ($total === 0) {
+    if ($total < 2) {
         return ['prediction' => 'DRAGON', 'confidence' => 50];
     }
 
-    
-    // Count frequencies
-    $dragonCount = 0;
-    $tigerCount = 0;
-    foreach ($trends as $t) {
-        if ($t === 'DRAGON') $dragonCount++;
-        else $tigerCount++;
+    $last = $trends[$total - 1];
+
+    // === MARKOV CHAIN: Build transition matrix ===
+    $trans = [
+        'DRAGON' => ['DRAGON' => 0, 'TIGER' => 0],
+        'TIGER' => ['DRAGON' => 0, 'TIGER' => 0]
+    ];
+
+    for ($i = 0; $i < $total - 1; $i++) {
+        $trans[$trends[$i]][$trends[$i + 1]]++;
     }
-    
-    // Detect end streak
-    $lastVal = $trends[$total - 1];
-    $streak = 1;
-    for ($i = $total - 2; $i >= 0; $i--) {
-        if ($trends[$i] === $lastVal) $streak++;
-        else break;
+
+    // Calculate probability of next state given current state
+    $fromLast = $trans[$last];
+    $totalFromLast = $fromLast['DRAGON'] + $fromLast['TIGER'];
+
+    if ($totalFromLast === 0) {
+        // No data for this state, use overall frequency
+        $dCount = count(array_filter($trends, function($t) { return $t === 'DRAGON'; }));
+        $prediction = ($dCount > $total / 2) ? 'TIGER' : 'DRAGON';
+        $confidence = 55;
+    } else {
+        $probDragon = $fromLast['DRAGON'] / $totalFromLast;
+        $probTiger = $fromLast['TIGER'] / $totalFromLast;
+
+        if ($probDragon > $probTiger) {
+            $prediction = 'DRAGON';
+            $confidence = round(60 + ($probDragon - 0.5) * 60);
+        } elseif ($probTiger > $probDragon) {
+            $prediction = 'TIGER';
+            $confidence = round(60 + ($probTiger - 0.5) * 60);
+        } else {
+            // Equal probability - use 2nd order Markov
+            $prediction = secondOrderMarkov($trends);
+            $confidence = 62;
+        }
     }
-    
-    // Decision logic
-    $prediction = 'DRAGON';
-    $confidence = 70;
-    
-    // Rule 1: Long streak reversal
-    if ($streak >= 3) {
-        $prediction = ($lastVal === 'DRAGON') ? 'TIGER' : 'DRAGON';
-        $confidence = 88;
+
+    // === 2nd ORDER MARKOV (last 2 states) for extra accuracy ===
+    if ($total >= 3) {
+        $second = secondOrderMarkov($trends);
+        // If 2nd order disagrees with 1st order and has enough data, trust 2nd order
+        $pair = $trends[$total - 2] . '_' . $trends[$total - 1];
+        $pairCount = 0;
+        for ($i = 0; $i < $total - 2; $i++) {
+            if ($trends[$i] . '_' . $trends[$i + 1] === $pair) {
+                $pairCount++;
+            }
+        }
+        if ($pairCount >= 2 && $second !== $prediction) {
+            $prediction = $second;
+            $confidence = max($confidence, 70);
+        }
     }
-    // Rule 2: Medium streak continuation
-    elseif ($streak === 2) {
-        $prediction = $lastVal;
-        $confidence = 72;
-    }
-    // Rule 3: Frequency imbalance
-    elseif ($dragonCount > $tigerCount + 2) {
-        $prediction = 'TIGER';
-        $confidence = 80;
-    }
-    elseif ($tigerCount > $dragonCount + 2) {
-        $prediction = 'DRAGON';
-        $confidence = 80;
-    }
-    // Rule 4: Nearly equal - predict opposite of last
-    else {
-        $prediction = ($lastVal === 'DRAGON') ? 'TIGER' : 'DRAGON';
-        $confidence = 65;
-    }
-    
+
+    $confidence = min(95, max(50, $confidence));
+
     return [
         'prediction' => $prediction,
         'confidence' => $confidence,
-        'method' => 'frequency_streak',
+        'method' => 'markov_chain',
         'details' => [
-            'dragon_count' => $dragonCount,
-            'tiger_count' => $tigerCount,
-            'end_streak' => $streak,
-            'streak_value' => $lastVal
+            'transitions' => $trans,
+            'last_state' => $last
         ]
     ];
+}
+
+function secondOrderMarkov($trends) {
+    $total = count($trends);
+    if ($total < 3) return $trends[$total - 1];
+
+    $lastPair = $trends[$total - 2] . '_' . $trends[$total - 1];
+    $nextD = 0;
+    $nextT = 0;
+
+    for ($i = 0; $i < $total - 2; $i++) {
+        $pair = $trends[$i] . '_' . $trends[$i + 1];
+        if ($pair === $lastPair) {
+            if ($trends[$i + 2] === 'DRAGON') $nextD++;
+            else $nextT++;
+        }
+    }
+
+    if ($nextD + $nextT === 0) {
+        return $trends[$total - 1] === 'DRAGON' ? 'TIGER' : 'DRAGON';
+    }
+
+    return $nextD >= $nextT ? 'DRAGON' : 'TIGER';
 }
 
 $result = firstAnalysis($trends);
