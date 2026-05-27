@@ -2,553 +2,462 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dragon Tiger Prediction Tool</title>
-    <link rel="stylesheet" href="get-accurate-result.css">
-    <link rel="stylesheet" href="UI-look.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dragon Tiger Tool</title>
     <style>
-        /* Full screen iframe for dhaniwin website */
-        .website-frame {
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+        /* === FULLSCREEN IFRAME === */
+        #siteFrame {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            border: none; z-index: 1;
+        }
+
+        /* === FLOATING TOOL CART === */
+        .tool-cart {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            border: none;
+            bottom: 80px; right: 10px;
+            width: 280px;
+            background: #1a1a2e;
+            border: 1.5px solid #6c63ff;
+            border-radius: 14px;
+            box-shadow: 0 8px 32px rgba(108,99,255,0.35);
+            z-index: 99999;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 13px;
+            color: #fff;
         }
-        .website-frame iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
+        .tool-cart.minimized {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            bottom: 90px; right: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(108,99,255,0.5);
+            animation: pulse-glow 2s infinite;
         }
-        /* Cart stays on top of iframe */
-        .floating-cart {
-            z-index: 99999 !important;
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 4px 20px rgba(108,99,255,0.5); }
+            50% { box-shadow: 0 4px 30px rgba(108,99,255,0.8); }
         }
-        /* Hide main content when iframe is showing */
-        .main-content.hidden {
-            display: none;
+        .tool-cart.minimized .cart-content,
+        .tool-cart.minimized .cart-footer { display: none; }
+        .tool-cart.minimized .cart-head { 
+            padding: 0; background: none; border: none;
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
         }
-        .bg-animation.hidden {
-            display: none;
+        .tool-cart.minimized .cart-head .head-title,
+        .tool-cart.minimized .cart-head .head-btns .min-btn { display: none; }
+        .tool-cart.minimized .cart-head .head-btns { margin: 0; }
+        .tool-cart.minimized .mini-icon { display: flex; font-size: 22px; }
+
+        /* Cart Header */
+        .cart-head {
+            background: linear-gradient(135deg, #6c63ff, #4834d4);
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: grab;
+            user-select: none;
         }
+        .cart-head:active { cursor: grabbing; }
+        .head-title { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; }
+        .head-btns { display: flex; gap: 6px; align-items: center; }
+        .head-btns button {
+            background: rgba(255,255,255,0.2);
+            border: none; color: #fff;
+            width: 24px; height: 24px;
+            border-radius: 6px; cursor: pointer;
+            font-size: 14px; display: flex;
+            align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+        .head-btns button:hover { background: rgba(255,255,255,0.35); }
+        .mini-icon { display: none; font-size: 22px; }
+
+        /* Cart Content */
+        .cart-content {
+            padding: 10px 12px;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .cart-content::-webkit-scrollbar { width: 3px; }
+        .cart-content::-webkit-scrollbar-thumb { background: #6c63ff; border-radius: 3px; }
+
+        /* Status Box */
+        .status-box {
+            background: rgba(108,99,255,0.08);
+            border: 1px solid rgba(108,99,255,0.25);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #ccc;
+        }
+        .status-box .green { color: #00e676; font-weight: 600; }
+        .status-box .orange { color: #ffab40; font-weight: 600; }
+        .status-box .purple { color: #b388ff; font-weight: 600; }
+
+        /* Trend Section */
+        .trend-sec { display: none; }
+        .trend-sec.show { display: block; }
+        .trend-counter { text-align: center; font-size: 11px; color: #888; margin-bottom: 6px; }
+        .trend-counter b { color: #6c63ff; font-size: 14px; }
+
+        .trend-row { display: flex; gap: 6px; margin-bottom: 8px; }
+        .trend-row select {
+            flex: 1; padding: 6px 8px;
+            background: #16213e; border: 1px solid #333;
+            color: #fff; border-radius: 6px; font-size: 11px;
+        }
+
+        .btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .btn-d, .btn-t {
+            flex: 1; padding: 10px 0;
+            border: none; border-radius: 8px;
+            font-size: 12px; font-weight: 700;
+            cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+            text-transform: uppercase;
+        }
+        .btn-d {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: #fff;
+        }
+        .btn-t {
+            background: linear-gradient(135deg, #ffd93d, #f39c12);
+            color: #1a1a2e;
+        }
+        .btn-d:active, .btn-t:active { transform: scale(0.95); }
+
+        /* Tags */
+        .tags-area {
+            display: flex; flex-wrap: wrap; gap: 4px;
+            padding: 6px; background: rgba(0,0,0,0.3);
+            border-radius: 6px; min-height: 28px; margin-bottom: 6px;
+        }
+        .tag {
+            padding: 2px 7px; border-radius: 4px;
+            font-size: 9px; font-weight: 700; text-transform: uppercase;
+        }
+        .tag.d { background: rgba(255,107,107,0.2); color: #ff6b6b; border: 1px solid rgba(255,107,107,0.3); }
+        .tag.t { background: rgba(255,217,61,0.2); color: #ffd93d; border: 1px solid rgba(255,217,61,0.3); }
+
+        .rst-btn {
+            display: none; margin: 4px auto 0; padding: 5px 14px;
+            background: rgba(108,99,255,0.15); border: 1px solid rgba(108,99,255,0.3);
+            color: #aaa; border-radius: 5px; font-size: 10px; cursor: pointer;
+        }
+
+        /* Processing */
+        .processing { display: none; text-align: center; padding: 12px 0; }
+        .processing.show { display: block; }
+        .spinner {
+            width: 28px; height: 28px; margin: 0 auto 8px;
+            border: 3px solid rgba(108,99,255,0.2);
+            border-top: 3px solid #6c63ff;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .processing p { font-size: 11px; color: #888; }
+
+        /* Result */
+        .result-sec { display: none; text-align: center; padding: 8px 0; }
+        .result-sec.show { display: block; }
+        .result-sec h4 { font-size: 11px; color: #888; margin-bottom: 4px; }
+        .result-val {
+            font-size: 22px; font-weight: 800; margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .result-val.dragon { color: #ff6b6b; }
+        .result-val.tiger { color: #ffd93d; }
+        .result-sec .ask { font-size: 11px; color: #888; margin-bottom: 6px; }
+        .fb-row { display: flex; gap: 8px; justify-content: center; }
+        .fb-row button {
+            padding: 7px 18px; border: none; border-radius: 6px;
+            font-size: 12px; font-weight: 600; cursor: pointer;
+        }
+        .fb-y { background: #00e676; color: #1a1a2e; }
+        .fb-n { background: #ff5252; color: #fff; }
+
+        /* Footer Nav */
+        .cart-footer {
+            padding: 8px 10px;
+            background: rgba(0,0,0,0.4);
+            border-top: 1px solid rgba(108,99,255,0.15);
+        }
+        .nav-row { display: flex; gap: 5px; }
+        .nav-row button {
+            flex: 1; padding: 7px 4px;
+            background: rgba(108,99,255,0.1);
+            border: 1px solid rgba(108,99,255,0.3);
+            color: #bbb; border-radius: 6px;
+            font-size: 10px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .nav-row button.on {
+            background: linear-gradient(135deg, #6c63ff, #4834d4);
+            border-color: #6c63ff; color: #fff;
+        }
+        .nav-row button:hover { border-color: #6c63ff; color: #fff; }
     </style>
 </head>
 <body>
 
-    <!-- Website iframe (dhaniwin0.com loads here - SAME SCREEN) -->
-    <div class="website-frame" id="websiteFrame">
-        <iframe id="mainIframe" src="https://dhaniwin0.com/login?type=0" 
-            allow="fullscreen" 
-            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation"
-            referrerpolicy="no-referrer">
-        </iframe>
+<!-- Fullscreen Website -->
+<iframe id="siteFrame" src="https://dhaniwin0.com/login?type=0" 
+    allow="fullscreen"
+    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation"
+    referrerpolicy="no-referrer"></iframe>
+
+<!-- Small Floating Tool Cart -->
+<div class="tool-cart" id="cart">
+    <div class="cart-head" id="cartHead">
+        <span class="head-title">🎯 DT Predictor</span>
+        <span class="mini-icon">🎯</span>
+        <div class="head-btns">
+            <button class="min-btn" onclick="toggleMinimize()" title="Minimize">−</button>
+        </div>
     </div>
+    <div class="cart-content">
+        <div class="status-box" id="statusBox">Login Now, Tool is waiting...</div>
 
-    <!-- Floating Cart Widget (ON TOP of website) -->
-    <div class="floating-cart" id="floatingCart">
-        <!-- Cart Header (Draggable) -->
-        <div class="cart-header" id="cartHeader">
-            <h3>🎯 Prediction Tool</h3>
-            <span class="drag-icon">☰</span>
+        <div class="trend-sec" id="trendSec">
+            <div class="trend-counter">Entered: <b id="cnt">0</b>/10</div>
+            <div class="trend-row">
+                <select id="tNum">
+                    <option>Trend 1</option><option>Trend 2</option>
+                    <option>Trend 3</option><option>Trend 4</option><option>Trend 5</option>
+                </select>
+            </div>
+            <div class="btn-row">
+                <button class="btn-d" onclick="addT('DRAGON')">🔥 Dragon</button>
+                <button class="btn-t" onclick="addT('TIGER')">🐯 Tiger</button>
+            </div>
+            <div class="tags-area" id="tags"></div>
+            <button class="rst-btn" id="rstBtn" onclick="resetT()">↺ Reset</button>
         </div>
 
-        <!-- Cart Body -->
-        <div class="cart-body">
-            <!-- Status Area -->
-            <div class="status-area" id="statusArea">
-                <p id="statusMessage">Login Now, Tool is waiting...</p>
-            </div>
-
-            <!-- Trend Input Section -->
-            <div class="trend-section" id="trendSection">
-                <div class="trend-counter">
-                    Trends Entered: <span id="trendCount">0</span> / 10
-                </div>
-
-                <div class="trend-number-input">
-                    <label>Trend #:</label>
-                    <select id="trendNumber">
-                        <option value="1">Trend 1</option>
-                        <option value="2">Trend 2</option>
-                        <option value="3">Trend 3</option>
-                        <option value="4">Trend 4</option>
-                        <option value="5">Trend 5</option>
-                    </select>
-                </div>
-
-                <div class="trend-buttons">
-                    <button class="trend-btn dragon" onclick="addTrend('DRAGON')">🔥 Dragon</button>
-                    <button class="trend-btn tiger" onclick="addTrend('TIGER')">🐯 Tiger</button>
-                </div>
-
-                <div class="trend-display" id="trendDisplay"></div>
-
-                <button class="reset-btn" id="resetBtn" onclick="resetTrends()">Reset Trends</button>
-            </div>
-
-            <!-- Processing Animation -->
-            <div class="processing" id="processingArea">
-                <div class="processing-spinner"></div>
-                <p>Analyzing patterns... Running triple verification...</p>
-            </div>
-
-            <!-- Result Area -->
-            <div class="result-area" id="resultArea">
-                <h4>Next Predicted Result:</h4>
-                <div class="prediction" id="predictionResult"></div>
-                <p style="font-size: 13px; color: #aaa; margin-bottom: 8px;">Tell me, is it right?</p>
-                <div class="feedback-buttons">
-                    <button class="feedback-btn yes" onclick="feedbackYes()">✅ Yes</button>
-                    <button class="feedback-btn no" onclick="feedbackNo()">❌ No</button>
-                </div>
-            </div>
-
-            <!-- Accuracy Badge -->
-            <div class="accuracy-badge">99% Accuracy Guaranteed</div>
+        <div class="processing" id="proc">
+            <div class="spinner"></div>
+            <p>Analyzing patterns...</p>
         </div>
 
-        <!-- Cart Footer - Navigation -->
-        <div class="cart-footer">
-            <div class="nav-buttons">
-                <button class="nav-btn active" id="btnLogin" onclick="navigateTo('login')">🔑 Login</button>
-                <button class="nav-btn" id="btnHome" onclick="navigateTo('home')">🏠 Home</button>
-                <button class="nav-btn" id="btnDragonTiger" onclick="navigateTo('dragontiger')">🎲 Dragon Tiger</button>
+        <div class="result-sec" id="resSec">
+            <h4>Next Result:</h4>
+            <div class="result-val" id="resVal"></div>
+            <p class="ask">Tell me, is it right?</p>
+            <div class="fb-row">
+                <button class="fb-y" onclick="fbYes()">✅ Yes</button>
+                <button class="fb-n" onclick="fbNo()">❌ No</button>
             </div>
         </div>
     </div>
 
-    <script>
-        // ===== DRAG FUNCTIONALITY =====
-        const cart = document.getElementById('floatingCart');
-        const header = document.getElementById('cartHeader');
-        let isDragging = false;
-        let currentX, currentY, initialX, initialY;
-        let xOffset = 0, yOffset = 0;
+    <div class="cart-footer">
+        <div class="nav-row">
+            <button class="on" id="nLogin" onclick="nav('login')">🔑 Login</button>
+            <button id="nHome" onclick="nav('home')">🏠 Home</button>
+            <button id="nDT" onclick="nav('dt')">🎲 D&T</button>
+        </div>
+    </div>
+</div>
 
-        header.addEventListener('mousedown', dragStart);
-        document.addEventListener('mousemove', drag);
-        document.addEventListener('mouseup', dragEnd);
-        header.addEventListener('touchstart', dragStart, {passive: false});
-        document.addEventListener('touchmove', drag, {passive: false});
-        document.addEventListener('touchend', dragEnd);
+<script>
+// === MINIMIZE / MAXIMIZE ===
+const cart = document.getElementById('cart');
+let isMin = false;
 
-        function dragStart(e) {
-            if (e.type === "touchstart") {
-                initialX = e.touches[0].clientX - xOffset;
-                initialY = e.touches[0].clientY - yOffset;
-            } else {
-                initialX = e.clientX - xOffset;
-                initialY = e.clientY - yOffset;
-            }
-            isDragging = true;
-            cart.style.transform = 'none';
-            cart.style.transition = 'none';
-        }
+function toggleMinimize() {
+    isMin = !isMin;
+    cart.classList.toggle('minimized', isMin);
+}
+// Click minimized bubble to expand
+cart.addEventListener('click', function(e) {
+    if (isMin) { toggleMinimize(); e.stopPropagation(); }
+});
 
-        function drag(e) {
-            if (!isDragging) return;
-            e.preventDefault();
+// === DRAG ===
+const head = document.getElementById('cartHead');
+let dragging = false, dx = 0, dy = 0, startX, startY;
 
-            if (e.type === "touchmove") {
-                currentX = e.touches[0].clientX - initialX;
-                currentY = e.touches[0].clientY - initialY;
-            } else {
-                currentX = e.clientX - initialX;
-                currentY = e.clientY - initialY;
-            }
+head.addEventListener('mousedown', dStart);
+head.addEventListener('touchstart', dStart, {passive: false});
+document.addEventListener('mousemove', dMove);
+document.addEventListener('touchmove', dMove, {passive: false});
+document.addEventListener('mouseup', dEnd);
+document.addEventListener('touchend', dEnd);
 
-            xOffset = currentX;
-            yOffset = currentY;
-            cart.style.left = currentX + 'px';
-            cart.style.top = currentY + 'px';
-        }
+function dStart(e) {
+    if (isMin) return;
+    dragging = true;
+    let ev = e.touches ? e.touches[0] : e;
+    startX = ev.clientX - dx;
+    startY = ev.clientY - dy;
+    cart.style.transition = 'none';
+}
+function dMove(e) {
+    if (!dragging) return;
+    e.preventDefault();
+    let ev = e.touches ? e.touches[0] : e;
+    dx = ev.clientX - startX;
+    dy = ev.clientY - startY;
+    cart.style.transform = `translate(${dx}px, ${dy}px)`;
+}
+function dEnd() { dragging = false; cart.style.transition = 'all 0.3s cubic-bezier(0.4,0,0.2,1)'; }
 
-        function dragEnd() {
-            isDragging = false;
-        }
+// === NAVIGATION ===
+const urls = {
+    login: 'https://dhaniwin0.com/login?type=0',
+    home: 'https://dhaniwin0.com/',
+    dt: 'https://dhaniwin0.com/game/allGames?categoryCode=C202505220412050186'
+};
+const frame = document.getElementById('siteFrame');
 
-        // ===== PAGE NAVIGATION (IFRAME - SAME SCREEN) =====
-        const urls = {
-            login: 'https://dhaniwin0.com/login?type=0',
-            home: 'https://dhaniwin0.com/',
-            dragontiger: 'https://dhaniwin0.com/game/allGames?categoryCode=C202505220412050186'
-        };
+function nav(p) {
+    frame.src = urls[p];
+    document.querySelectorAll('.nav-row button').forEach(b => b.classList.remove('on'));
+    if (p === 'login') { document.getElementById('nLogin').classList.add('on'); setStatus('Login Now, Tool is waiting...'); hideTrend(); hideRes(); }
+    if (p === 'home') { document.getElementById('nHome').classList.add('on'); setStatus('<span class="green">Login Done!</span> Now use Dragon Tiger.'); hideTrend(); hideRes(); }
+    if (p === 'dt') { document.getElementById('nDT').classList.add('on'); setStatus('Select last <span class="purple">10 trends</span> (Bottom to top).'); showTrend(); hideRes(); }
+}
 
-        let currentPage = 'login';
-        const iframe = document.getElementById('mainIframe');
+function setStatus(m) { document.getElementById('statusBox').innerHTML = m; }
+function showTrend() { document.getElementById('trendSec').classList.add('show'); }
+function hideTrend() { document.getElementById('trendSec').classList.remove('show'); }
+function hideRes() { document.getElementById('resSec').classList.remove('show'); document.getElementById('proc').classList.remove('show'); }
 
-        function navigateTo(page) {
-            currentPage = page;
+// === TREND INPUT ===
+let trends = [];
+let history = JSON.parse(localStorage.getItem('dt_hist') || '[]');
 
-            // Change iframe URL (SAME SCREEN - no new tab!)
-            iframe.src = urls[page];
+function addT(v) {
+    if (trends.length >= 10) return;
+    trends.push(v);
+    document.getElementById('cnt').textContent = trends.length;
+    let tag = document.createElement('span');
+    tag.className = 'tag ' + (v === 'DRAGON' ? 'd' : 't');
+    tag.textContent = v === 'DRAGON' ? 'D' : 'T';
+    document.getElementById('tags').appendChild(tag);
+    document.getElementById('rstBtn').style.display = 'block';
+    setStatus(`Trend <span class="purple">${trends.length}/10</span> entered...`);
+    if (trends.length >= 10) analyze();
+}
 
-            // Update button states
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+function resetT() {
+    trends = [];
+    document.getElementById('cnt').textContent = '0';
+    document.getElementById('tags').innerHTML = '';
+    document.getElementById('rstBtn').style.display = 'none';
+    hideRes();
+    setStatus('Select last <span class="purple">10 trends</span> (Bottom to top).');
+}
 
-            if (page === 'login') {
-                document.getElementById('btnLogin').classList.add('active');
-                updateStatus('Login Now, Tool is waiting...');
-                hideTrendSection();
-                hideResult();
-            } else if (page === 'home') {
-                document.getElementById('btnHome').classList.add('active');
-                updateStatus('<span class="success">Login Done...</span> Now use Dragon Tiger tool.');
-                hideTrendSection();
-                hideResult();
-            } else if (page === 'dragontiger') {
-                document.getElementById('btnDragonTiger').classList.add('active');
-                updateStatus('Dragon Tiger 1 min open now. <br>Select last 10 trends (Bottom to top).');
-                showTrendSection();
-                hideResult();
-            }
-        }
+// === ANALYSIS ===
+function analyze() {
+    hideTrend();
+    document.getElementById('proc').classList.add('show');
+    setStatus('<span class="purple">Processing...</span> Triple analysis running...');
 
-        function updateStatus(message) {
-            document.getElementById('statusMessage').innerHTML = message;
-        }
+    const data = { trends: trends, trendNumber: document.getElementById('tNum').selectedIndex + 1 };
 
-        // ===== TREND INPUT LOGIC =====
-        let trends = [];
-        const maxTrends = 10;
+    fetch('get-data.php', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) })
+    .then(r => r.json())
+    .then(() => Promise.all([
+        fetch('First-time-trend-anylyse.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) }).then(r=>r.json()),
+        fetch('Second-time-anylyse.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) }).then(r=>r.json()),
+        fetch('Third-time-anylyse.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) }).then(r=>r.json())
+    ]))
+    .then(res => fetch('Master-prediction-tool.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ first:res[0], second:res[1], third:res[2], trends:trends, trendNumber: data.trendNumber }) }).then(r=>r.json()))
+    .then(f => showResult(f.prediction))
+    .catch(() => { setTimeout(() => showResult(localPredict(trends)), 1500); });
+}
 
-        // History tracking for learning
-        let predictionHistory = JSON.parse(localStorage.getItem('dt_history') || '[]');
-        let correctCount = parseInt(localStorage.getItem('dt_correct') || '0');
-        let totalCount = parseInt(localStorage.getItem('dt_total') || '0');
+// === LOCAL PREDICTION (FALLBACK) ===
+function localPredict(d) {
+    let votes = { DRAGON: 0, TIGER: 0 };
 
-        function showTrendSection() {
-            document.getElementById('trendSection').classList.add('active');
-        }
+    // Markov
+    if (d.length >= 2) {
+        let last = d[d.length-1];
+        let tr = { DRAGON:{DRAGON:0,TIGER:0}, TIGER:{DRAGON:0,TIGER:0} };
+        for (let i=0;i<d.length-1;i++) tr[d[i]][d[i+1]]++;
+        let f = tr[last];
+        votes[f.DRAGON >= f.TIGER ? 'DRAGON' : 'TIGER'] += 3;
+    }
 
-        function hideTrendSection() {
-            document.getElementById('trendSection').classList.remove('active');
-        }
+    // Streak
+    let last = d[d.length-1], streak = 1;
+    for (let i=d.length-2;i>=0;i--) { if(d[i]===last) streak++; else break; }
+    if (streak <= 2) votes[last] += 2;
+    else if (streak >= 4) votes[last==='DRAGON'?'TIGER':'DRAGON'] += 2;
+    else votes[last==='DRAGON'?'TIGER':'DRAGON'] += 1;
 
-        function hideResult() {
-            document.getElementById('resultArea').classList.remove('active');
-            document.getElementById('processingArea').classList.remove('active');
-        }
+    // Pattern (2-gram)
+    if (d.length >= 4) {
+        let p = d[d.length-2]+d[d.length-1], nD=0, nT=0;
+        for (let i=0;i<d.length-2;i++) { if(d[i]+d[i+1]===p && i+2<d.length){ if(d[i+2]==='DRAGON') nD++; else nT++; }}
+        if (nD+nT>0) votes[nD>=nT?'DRAGON':'TIGER'] += 2;
+    }
 
-        function addTrend(value) {
-            if (trends.length >= maxTrends) return;
+    // Recent bias
+    let r5 = d.slice(-5), dc = r5.filter(x=>x==='DRAGON').length;
+    if (dc >= 4) votes['TIGER'] += 1;
+    else if (dc <= 1) votes['DRAGON'] += 1;
 
-            trends.push(value);
-            document.getElementById('trendCount').textContent = trends.length;
+    // History learning
+    let pat = d.slice(-3).join(','), hD=0, hT=0;
+    for (let h of history) { if(h.p===pat){ if(h.a==='DRAGON') hD++; else hT++; }}
+    if (hD+hT>0) votes[hD>=hT?'DRAGON':'TIGER'] += 2;
 
-            // Update display
-            const display = document.getElementById('trendDisplay');
-            const tag = document.createElement('span');
-            tag.className = 'trend-tag ' + value.toLowerCase();
-            tag.textContent = value;
-            display.appendChild(tag);
+    return votes.DRAGON >= votes.TIGER ? 'DRAGON' : 'TIGER';
+}
 
-            // Show reset button
-            document.getElementById('resetBtn').style.display = 'block';
+// === SHOW RESULT ===
+function showResult(pred) {
+    document.getElementById('proc').classList.remove('show');
+    document.getElementById('resSec').classList.add('show');
+    let el = document.getElementById('resVal');
+    el.textContent = pred;
+    el.className = 'result-val ' + pred.toLowerCase();
+    setStatus('<span class="green">Done!</span> Next result ready.');
+    window._pred = pred;
+    window._pat = trends.slice(-3).join(',');
+}
 
-            // Update status
-            updateStatus(`Trend ${trends.length}/10 entered...`);
-
-            // If 10 trends entered, start processing
-            if (trends.length >= maxTrends) {
-                startAnalysis();
-            }
-        }
-
-        function resetTrends() {
-            trends = [];
-            document.getElementById('trendCount').textContent = '0';
-            document.getElementById('trendDisplay').innerHTML = '';
-            document.getElementById('resetBtn').style.display = 'none';
-            hideResult();
-            updateStatus('Dragon Tiger 1 min open now. <br>Select last 10 trends (Bottom to top).');
-        }
-
-        // ===== ADVANCED PREDICTION ALGORITHM =====
-        function startAnalysis() {
-            document.getElementById('trendSection').classList.remove('active');
-            document.getElementById('processingArea').classList.add('active');
-            updateStatus('<span class="highlight">Processing...</span> Running triple analysis...');
-
-            const trendNumber = document.getElementById('trendNumber').value;
-            const requestData = { trends: trends, trendNumber: trendNumber };
-
-            // Try backend first
-            fetch('get-data.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestData)
-            }).then(response => response.json())
-            .then(data => {
-                return Promise.all([
-                    fetch('First-time-trend-anylyse.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(requestData)
-                    }).then(r => r.json()),
-                    fetch('Second-time-anylyse.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(requestData)
-                    }).then(r => r.json()),
-                    fetch('Third-time-anylyse.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(requestData)
-                    }).then(r => r.json())
-                ]);
-            })
-            .then(results => {
-                return fetch('Master-prediction-tool.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        first: results[0],
-                        second: results[1],
-                        third: results[2],
-                        trends: trends,
-                        trendNumber: trendNumber
-                    })
-                }).then(r => r.json());
-            })
-            .then(finalResult => {
-                showPrediction(finalResult.prediction);
-            })
-            .catch(error => {
-                console.error('Backend error, using local:', error);
-                runLocalPrediction();
-            });
-        }
-
-        // ===== COMPLETELY NEW SMART LOCAL PREDICTION =====
-        function runLocalPrediction() {
-            setTimeout(() => {
-                const prediction = smartPredict(trends);
-                showPrediction(prediction);
-            }, 2000);
-        }
-
-        function smartPredict(data) {
-            // ===== ALGORITHM 1: Markov Chain Transition =====
-            let markovPrediction = markovChain(data);
-            
-            // ===== ALGORITHM 2: Streak Continuation/Reversal =====
-            let streakPrediction = streakLogic(data);
-            
-            // ===== ALGORITHM 3: Pattern Matching =====
-            let patternPrediction = patternMatch(data);
-            
-            // ===== ALGORITHM 4: Weighted Recent Bias =====
-            let recentPrediction = recentBias(data);
-            
-            // ===== COMBINE: Majority Vote =====
-            let votes = { 'DRAGON': 0, 'TIGER': 0 };
-            
-            // Markov gets highest weight (most reliable for sequences)
-            votes[markovPrediction] += 3;
-            votes[streakPrediction] += 2;
-            votes[patternPrediction] += 2;
-            votes[recentPrediction] += 1;
-            
-            // Also consider history learning
-            if (predictionHistory.length >= 5) {
-                let historyPrediction = historyLearning(data);
-                votes[historyPrediction] += 2;
-            }
-            
-            return votes['DRAGON'] >= votes['TIGER'] ? 'DRAGON' : 'TIGER';
-        }
-
-        // Markov Chain: What usually follows the current state?
-        function markovChain(data) {
-            if (data.length < 2) return data[data.length - 1];
-            
-            let last = data[data.length - 1];
-            let transitions = { 'DRAGON': { 'DRAGON': 0, 'TIGER': 0 }, 'TIGER': { 'DRAGON': 0, 'TIGER': 0 } };
-            
-            for (let i = 0; i < data.length - 1; i++) {
-                transitions[data[i]][data[i + 1]]++;
-            }
-            
-            let fromLast = transitions[last];
-            let totalFromLast = fromLast['DRAGON'] + fromLast['TIGER'];
-            
-            if (totalFromLast === 0) return last === 'DRAGON' ? 'TIGER' : 'DRAGON';
-            
-            // Return whichever has higher transition probability
-            return fromLast['DRAGON'] >= fromLast['TIGER'] ? 'DRAGON' : 'TIGER';
-        }
-
-        // Streak Logic: Short streaks continue, long streaks break
-        function streakLogic(data) {
-            let last = data[data.length - 1];
-            let streak = 1;
-            
-            for (let i = data.length - 2; i >= 0; i--) {
-                if (data[i] === last) streak++;
-                else break;
-            }
-            
-            // Key insight: In Dragon Tiger games
-            // Streak 1-2: Often continues (60-65%)
-            // Streak 3: 50/50
-            // Streak 4+: Often breaks (60-70%)
-            if (streak <= 2) return last; // Continue
-            if (streak === 3) {
-                // Check what happened after 3-streaks historically in this data
-                return last; // Slight lean to continue
-            }
-            if (streak >= 4) return last === 'DRAGON' ? 'TIGER' : 'DRAGON'; // Break
-            
-            return last;
-        }
-
-        // Pattern Matching: Look for repeating sub-sequences
-        function patternMatch(data) {
-            let len = data.length;
-            
-            // Check if last 2 entries match a pattern that repeated before
-            if (len >= 4) {
-                let last2 = data[len-2] + data[len-1];
-                
-                // Find all occurrences of this pair and what followed
-                let nextDragon = 0, nextTiger = 0;
-                for (let i = 0; i < len - 2; i++) {
-                    if (data[i] + data[i+1] === last2 && i + 2 < len) {
-                        if (data[i+2] === 'DRAGON') nextDragon++;
-                        else nextTiger++;
-                    }
-                }
-                
-                if (nextDragon + nextTiger > 0) {
-                    return nextDragon >= nextTiger ? 'DRAGON' : 'TIGER';
-                }
-            }
-            
-            // Check last 3 pattern
-            if (len >= 6) {
-                let last3 = data[len-3] + data[len-2] + data[len-1];
-                let nextDragon = 0, nextTiger = 0;
-                
-                for (let i = 0; i < len - 3; i++) {
-                    if (data[i] + data[i+1] + data[i+2] === last3 && i + 3 < len) {
-                        if (data[i+3] === 'DRAGON') nextDragon++;
-                        else nextTiger++;
-                    }
-                }
-                
-                if (nextDragon + nextTiger > 0) {
-                    return nextDragon >= nextTiger ? 'DRAGON' : 'TIGER';
-                }
-            }
-            
-            // Fallback: opposite of last
-            return data[len-1] === 'DRAGON' ? 'TIGER' : 'DRAGON';
-        }
-
-        // Recent Bias: Weight recent entries more
-        function recentBias(data) {
-            let last5 = data.slice(-5);
-            let dCount = last5.filter(t => t === 'DRAGON').length;
-            let tCount = last5.length - dCount;
-            
-            // Counter-trend: if one dominates recently, the other is more likely
-            if (dCount >= 4) return 'TIGER';
-            if (tCount >= 4) return 'DRAGON';
-            
-            // If balanced, use last entry opposite
-            return data[data.length - 1] === 'DRAGON' ? 'TIGER' : 'DRAGON';
-        }
-
-        // History Learning: Learn from past sessions
-        function historyLearning(data) {
-            // Use stored history to find similar patterns
-            let lastPattern = data.slice(-3).join(',');
-            let matchDragon = 0, matchTiger = 0;
-            
-            for (let h of predictionHistory) {
-                if (h.pattern === lastPattern) {
-                    if (h.actual === 'DRAGON') matchDragon++;
-                    else if (h.actual === 'TIGER') matchTiger++;
-                }
-            }
-            
-            if (matchDragon + matchTiger > 0) {
-                return matchDragon >= matchTiger ? 'DRAGON' : 'TIGER';
-            }
-            
-            return data[data.length - 1] === 'DRAGON' ? 'TIGER' : 'DRAGON';
-        }
-
-        function showPrediction(prediction) {
-            document.getElementById('processingArea').classList.remove('active');
-            document.getElementById('resultArea').classList.add('active');
-
-            const predElement = document.getElementById('predictionResult');
-            predElement.textContent = prediction;
-            predElement.className = 'prediction ' + prediction.toLowerCase();
-
-            updateStatus(`<span class="success">Analysis Complete!</span> Next result is ready.`);
-            
-            // Store this prediction for learning
-            window._lastPrediction = prediction;
-            window._lastPattern = trends.slice(-3).join(',');
-        }
-
-        // ===== FEEDBACK HANDLING WITH LEARNING =====
-        function feedbackYes() {
-            // Store as correct
-            totalCount++;
-            correctCount++;
-            localStorage.setItem('dt_correct', correctCount);
-            localStorage.setItem('dt_total', totalCount);
-            
-            // Save to history for future learning
-            predictionHistory.push({
-                pattern: window._lastPattern,
-                predicted: window._lastPrediction,
-                actual: window._lastPrediction, // It was correct
-                timestamp: Date.now()
-            });
-            if (predictionHistory.length > 100) predictionHistory.shift();
-            localStorage.setItem('dt_history', JSON.stringify(predictionHistory));
-            
-            updateStatus('<span class="success">Great! ✅</span> Ready for next prediction. Enter 10 new trends.');
-            resetForNewPrediction();
-        }
-
-        function feedbackNo() {
-            // Store as incorrect - learn the opposite
-            totalCount++;
-            localStorage.setItem('dt_total', totalCount);
-            
-            let actual = window._lastPrediction === 'DRAGON' ? 'TIGER' : 'DRAGON';
-            predictionHistory.push({
-                pattern: window._lastPattern,
-                predicted: window._lastPrediction,
-                actual: actual, // Opposite was correct
-                timestamp: Date.now()
-            });
-            if (predictionHistory.length > 100) predictionHistory.shift();
-            localStorage.setItem('dt_history', JSON.stringify(predictionHistory));
-            
-            updateStatus('<span class="warning">Again enter trends, I give you 99% result, my promise.</span>');
-            resetForNewPrediction();
-        }
-
-        function resetForNewPrediction() {
-            trends = [];
-            document.getElementById('trendCount').textContent = '0';
-            document.getElementById('trendDisplay').innerHTML = '';
-            document.getElementById('resultArea').classList.remove('active');
-            document.getElementById('resetBtn').style.display = 'none';
-
-            setTimeout(() => {
-                document.getElementById('trendSection').classList.add('active');
-            }, 1000);
-        }
-    </script>
+// === FEEDBACK ===
+function fbYes() {
+    history.push({ p: window._pat, a: window._pred });
+    if (history.length > 100) history.shift();
+    localStorage.setItem('dt_hist', JSON.stringify(history));
+    setStatus('<span class="green">Great! ✅</span> Enter 10 new trends.');
+    resetForNew();
+}
+function fbNo() {
+    let opp = window._pred === 'DRAGON' ? 'TIGER' : 'DRAGON';
+    history.push({ p: window._pat, a: opp });
+    if (history.length > 100) history.shift();
+    localStorage.setItem('dt_hist', JSON.stringify(history));
+    setStatus('<span class="orange">Again enter trends, 99% result my promise.</span>');
+    resetForNew();
+}
+function resetForNew() {
+    trends = [];
+    document.getElementById('cnt').textContent = '0';
+    document.getElementById('tags').innerHTML = '';
+    document.getElementById('resSec').classList.remove('show');
+    document.getElementById('rstBtn').style.display = 'none';
+    setTimeout(() => showTrend(), 800);
+}
+</script>
 </body>
 </html>
